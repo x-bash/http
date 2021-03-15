@@ -5,7 +5,6 @@
 
 # @src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
 xrc dict/v0
-xrc debug/v0
 
 ############################
 # Section 1: Instantiation & Utilities
@@ -27,7 +26,7 @@ http_make(){
     dict_put url "${2:?Provide url}"
 }
 
-debug_init http
+xrc log init http
 
 http_browse(){
     local BROWSER=${BROWSER:-$BROWSER}
@@ -41,7 +40,7 @@ http_browse(){
     elif command -v gnome-open > /dev/null; then
         gnome-open "$website"
     else
-        echo "Could not detect the web browser to use."
+        http_log debug "Could not detect the web browser to use."
         return 1
     fi
 }
@@ -172,12 +171,12 @@ http_header_content_type(){
 
     for i in $HTTP_HEADER_CONTENT_TYPE_LSIT; do
         if str_regex "$i" "$target"; then
-            http_debug "Add header: Content-Type=$i"
+            http_log debug "Add header: Content-Type=$i"
             http_header_put "Content-Type" "$i"
             return 0
         fi
     done
-    http_debug "Add header: Content-Type=$target"
+    http_log debug "Add header: Content-Type=$target"
     http_header_put "Content-Type" "$target"
 }
 
@@ -343,7 +342,7 @@ _http_request(){
     tmp=$(mktemp)
     echo "$data" > "$tmp"
     # TODO: Display the data if only if body is text and data is NOT a lot
-    # http_debug "body is: $data"
+    # http_log debug "body is: $data"
     # [ -n "$DEBUG" ] && echo "body is: $data" >&2
 
     local header_filepath data_filepath
@@ -351,15 +350,15 @@ _http_request(){
     data_filepath="$(_http_resp_latest_body_filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        http_debug curl -D "$header_filepath" -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path"
-        eval curl -D "$header_filepath"  -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path"
+        eval curl -D "$header_filepath"  -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     else
-        http_debug curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path"
+        eval curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     fi
     rm "$tmp"
 
-    http_debug "Response Header is: $(cat "$header_filepath")"
+    http_log debug "Response Header is: $(cat "$header_filepath")"
 
     local a b c
     # shellcheck disable=SC2034
