@@ -15,22 +15,22 @@ http(){
         shift
     fi
     case "$op" in
-        make)       http_make "$@" ;;
-        browse)     http_browse "$@" ;;
-        property)   http_dict "$@" ;;
-        cd)         http_cd "$@" ;;
-        path)       http_path "$@" ;;
-        qs)         http_qs "$@" ;;
-        header)     http_header "$@" ;;
+        make)               http_make "$@" ;;
+        browse)             http_browse "$@" ;;
+        dict|property)      http_dict "$@" ;;
+        cd)                 http_cd "$@" ;;
+        path)               http_path "$@" ;;
+        qs)                 http_qs "$@" ;;
+        header)             http_header "$@" ;;
 
-        resp)       ;;
+        req|request)        http_request "$@" ;;
+        head)               http_head "$@" ;;
+        get)                http_get "$@" ;;
+        post)               http_post "$@" ;;
+        put)                http_post "$@" ;;
+        delete)             http_delete "$@" ;;
 
-        req|request)    ;;
-        head)       http_head "$@" ;;
-        get)        http_get "$@" ;;
-        post)       http_post "$@" ;;
-        put)        http_post "$@" ;;
-        delete)     http_delete "$@" ;;
+        resp|response)      http_resp "$@" ;;
     esac
 }
 
