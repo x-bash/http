@@ -126,7 +126,15 @@ http_header(){
     fi
     case "$op" in
         dump)   
-            dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_pprint ;;
+            case "$1" in
+                json)  
+                    dict_scope header | dict_pjson ;;
+                curl)
+                    http_header dump | while read -r line; do
+                        printf "-H \"%s\" " "$line"
+                    done ;;
+                *)  dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_pprint ;;
+            esac ;;
         get)    
             dict_get "header" "${1:?header key}" ;;
         put)    
@@ -152,12 +160,6 @@ http_header(){
             http_header put "User-Agent" "${1:?User agent}"
 
     esac
-}
-
-_http_header_dump_curl_args(){
-    http_header_dump | while read -r line; do
-        printf "-H \"%s\" " "$line"
-    done
 }
 
 # http_header(){
@@ -357,11 +359,14 @@ http_resp(){
     esac
 }
 
-_http_request(){
+# #1: path; #2 data
+http_request(){
     local IFS=$' '
     local O="${O:?Please provide O}"
 
-    local X=${X:-get)} data=${2:-"$D"} path
+    local X=${X:-get)} 
+    local data=${2:-"$D"}
+    local path
     path="$(http_path "$1")"
 
     if [ -z "$data" ]; then
@@ -380,11 +385,11 @@ _http_request(){
     data_filepath="$(_http_resp_latest_body_filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        http_log debug curl -D "$header_filepath" -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path"
-        eval curl -D "$header_filepath"  -X "$X" "$(_http_qs_dump_curl)" "$(_http_header_dump_curl_args)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path"
+        eval curl -D "$header_filepath"  -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     else
-        http_log debug curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(_http_header_dump_curl_args)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$path"
+        eval curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     fi
     rm "$tmp"
 
@@ -406,7 +411,7 @@ _http_request(){
 _http_request_json_body() (  # Notice: Using subshell
     url=$1;  shift
     http_body_mput "$@"
-    _http_request "$url" "$(http_body_dump_json "")"
+    http_request "$url" "$(http_body_dump_json "")"
 )
 
 ############################
@@ -418,7 +423,7 @@ http_get() (    # Notice: Using subshell
     local O="${O:?Provide Object name}"
     url=$1;  shift
     http_qs_mput "$@"
-    X=GET _http_request "$url"
+    X=GET http_request "$url"
 )
 
 http_post() {
@@ -428,7 +433,7 @@ http_post() {
         form)   ;;
         text)   ;;
         bin)    ;;
-        *)      X=POST _http_request "$@" ;;
+        *)      X=POST http_request "$@" ;;
     esac
 }
 
@@ -439,9 +444,9 @@ http_put(){
         form)   ;;
         text)   ;;
         bin)    ;;
-        *)      X=PUT _http_request "$@" ;;
+        *)      X=PUT http_request "$@" ;;
     esac
 }
 
-http_delete(){ X=DELETE _http_request "$@"; }
-http_head(){ X=HEAD _http_request "$@"; }
+http_delete(){ X=DELETE http_request "$@"; }
+http_head(){ X=HEAD http_request "$@"; }
