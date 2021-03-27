@@ -1,0 +1,7 @@
+. ./v0
+
+http_make git https://api.git.com
+O=git http_qs token token123
+O=git http_header content-type application/json
+O=git http_header accept application/json
+O=git http_header

@@ -248,9 +248,10 @@ _http_qs_dump_curl(){
     [ -z "$O" ] && return 1
     local line
 
-    printf "-G "
-    dict_scope qs | KV_SEP="=" dict_print | while read -r line; do
-        printf "--data-urlencode \"%s\" " "$line"
+    printf "%s" " -G "
+    dict_scope qs | KV_SEP="=" dict_pprint | while read -r line; do
+        # printf "--data-urlencode \"%s\" " "$line"
+        printf " %s " "--data-urlencode $line"
     done
 }
 
