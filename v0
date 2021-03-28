@@ -336,13 +336,13 @@ http_resp(){
         shift
     fi
 
-    case "$1" in
+    case $op in
         h|header)
             if [ -z "$1" ]; then
-                cat "$(_http_resp_latest_header_filepath)"
+                cat "$(http_resp header_filepath)"
             else
                 local filepath
-                filepath="$(_http_resp_latest_header_filepath)"
+                filepath="$(http_resp header_filepath)"
                 local filter=${1:?provide filter} A
                 A="$(grep "$filter:" "$filepath")"
                 A="${A##$filter: }"
@@ -353,7 +353,7 @@ http_resp(){
         body_filepath)
             echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}" ;;
         body) 
-            cat "$(_http_resp_latest_body_filepath)" ;;
+            cat "$(http_resp body_filepath)" ;;
         *)
             http_resp body "$@"
     esac
@@ -370,7 +370,7 @@ http_request(){
     path="$(http_path "$1")"
 
     if [ -z "$data" ]; then
-        data="$(http_body_dump_json "")"
+        data="$(http_body dump json "")"
     fi
 
     local tmp
@@ -381,8 +381,8 @@ http_request(){
     # [ -n "$DEBUG" ] && echo "body is: $data" >&2
 
     local header_filepath data_filepath
-    header_filepath="$(_http_resp_latest_header_filepath)"
-    data_filepath="$(_http_resp_latest_body_filepath)"
+    header_filepath="$(http_resp header_filepath)"
+    data_filepath="$(http_resp body_filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
         http_log debug curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path"
@@ -422,7 +422,7 @@ _http_request_json_body() (  # Notice: Using subshell
 http_get() (    # Notice: Using subshell
     local O="${O:?Provide Object name}"
     url=$1;  shift
-    http_qs_mput "$@"
+    http_qs mput "$@"
     X=GET http_request "$url"
 )
 
