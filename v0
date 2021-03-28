@@ -296,7 +296,7 @@ http_body(){
             case "$1" in
                 json)  
                     dict_scope body | dict_pjson ;;
-                *)  dict_scope qs ;;
+                *)  dict_scope body ;;
             esac ;;
         get)
             dict_get body "${1:?body key}" ;;
