@@ -260,10 +260,10 @@ http_qs(){
             local i
             for i in "$@"; do
                 if [[ "$i" = *=* ]]; then
-                    http_qs_put "${i%=*}" "${i##*=}"
+                    http_qs put "${i%=*}" "${i##*=}"
                 else
                     eval value="\"\$${i}\""
-                    [ -n "$value" ] && http_qs_put "$i" "$value"
+                    [ -n "$value" ] && http_qs put "$i" "$value"
                 fi
             done;
     esac
@@ -410,8 +410,8 @@ http_request(){
 
 _http_request_json_body() (  # Notice: Using subshell
     url=$1;  shift
-    http_body_mput "$@"
-    http_request "$url" "$(http_body_dump_json "")"
+    http_body mput "$@"
+    http_request "$url" "$(http_body dump json "")"
 )
 
 ############################
