@@ -30,6 +30,8 @@ http(){
         put)                http_put        "$@" ;;
         delete)             http_delete     "$@" ;;
 
+        graphql|gq)         http_graphql    "$@" ;;
+
         resp|response)      http_resp       "$@" ;;
     esac
 }
@@ -450,3 +452,28 @@ http_put(){
 
 http_delete(){ X=DELETE http_request "$@"; }
 http_head(){ X=HEAD http_request "$@"; }
+
+############################
+# Section 7: GraphQL -- graphql
+############################s
+
+http_graphql(){
+    local O="${O:?Provide Object name}"
+    
+    local op
+    case "$op" in
+        query)
+            shift; local url=$1;  shift
+            http_graphql execute "$1" "query { $2 }"
+            ;;
+        header)     ;;
+        execute)
+            local url=$1;  shift
+            http content-type application/graphql
+            http_post "$1"
+            ;;
+        *)
+            http_graphql execute "$@"
+            ;;
+    esac
+}
