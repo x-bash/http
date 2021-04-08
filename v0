@@ -466,10 +466,18 @@ http_graphql(){
             shift; local url=$1;  shift
             http_graphql execute "$1" "query { $2 }"
             ;;
-        header)     ;;
+        query-json)
+            shift; local url=$1;  shift
+            http_graphql execute-json "$1" "{ \"query\": \"{ $2 }\""
+            ;;
         execute)
             local url=$1;  shift
             http content-type application/graphql
+            http_post "$1"
+            ;;
+        execute-json)
+            local url=$1;  shift
+            http content-type application/json
             http_post "$1"
             ;;
         *)
