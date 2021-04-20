@@ -393,12 +393,11 @@ http_resp() {
 http_request() {
     local IFS=$' '
     local O="${O:?Please provide O}"
-
-    local X=${X:-get)}
+    local X=${X:-get}
     local data=${2:-"$D"}
-    local path
-    path="$(http_path "$1")"
 
+    local paths
+    paths="$(http_path "$1")"
     if [ -z "$data" ]; then
         data="$(http_body dump json "")"
     fi
@@ -414,11 +413,11 @@ http_request() {
     data_filepath="$(http_resp body_filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        http_log debug curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$paths"
+        eval curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$paths" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     else
-        http_log debug curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$paths"
+        eval curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$paths" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     fi
     rm "$tmp"
 
