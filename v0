@@ -462,20 +462,20 @@ http_graphql(){
     
     local op
     case "$op" in
-        query)
+        q|query)
             shift; local url=$1;  shift
             http_graphql execute "$1" "query { $2 }"
             ;;
-        query-json)
+        qj|query-json)
             shift; local url=$1;  shift
             http_graphql execute-json "$1" "{ \"query\": \"{ $2 }\""
             ;;
-        execute)
+        e|execute)
             local url=$1;  shift
             http content-type application/graphql
             http_post "$1"
             ;;
-        execute-json)
+        ej|execute-json)
             local url=$1;  shift
             http content-type application/json
             http_post "$1"
