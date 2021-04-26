@@ -6,7 +6,7 @@
 # @src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
 xrc dict/v0
 
-http(){
+http() {
     local op
     if [ $# -eq 0 ]; then
         op=help
@@ -15,27 +15,26 @@ http(){
         shift
     fi
     case "$op" in
-        make)               http_make       "$@" ;;
-        browse)             http_browse     "$@" ;;
-        dict|property)      http_dict       "$@" ;;
-        cd)                 http_cd         "$@" ;;
-        path)               http_path       "$@" ;;
-        qs)                 http_qs         "$@" ;;
-        header)             http_header     "$@" ;;
+    make) http_make "$@" ;;
+    browse) http_browse "$@" ;;
+    dict | property) http_dict "$@" ;;
+    cd) http_cd "$@" ;;
+    path) http_path "$@" ;;
+    qs) http_qs "$@" ;;
+    header) http_header "$@" ;;
 
-        req|request)        http_request    "$@" ;;
-        head)               http_head       "$@" ;;
-        get)                http_get        "$@" ;;
-        post)               http_post       "$@" ;;
-        put)                http_put        "$@" ;;
-        delete)             http_delete     "$@" ;;
+    req | request) http_request "$@" ;;
+    head) http_head "$@" ;;
+    get) http_get "$@" ;;
+    post) http_post "$@" ;;
+    put) http_put "$@" ;;
+    delete) http_delete "$@" ;;
 
-        graphql|gq)         http_graphql    "$@" ;;
+    graphql | gq) http_graphql "$@" ;;
 
-        resp|response)      http_resp       "$@" ;;
+    resp | response) http_resp "$@" ;;
     esac
 }
-
 
 ############################
 # Section 1: Instantiation & Utilities
@@ -51,7 +50,7 @@ http(){
 ############################
 # http_new(){  oo.create_new_function http "$@";  }
 
-http_make(){
+http_make() {
     dict_make "${1:?Provide name}"
     local O="$1"
     dict_put url "${2:?Provide url}"
@@ -59,16 +58,16 @@ http_make(){
 
 xrc log init http
 
-http_browse(){
+http_browse() {
     local BROWSER=${BROWSER:-$BROWSER}
     local website=${1:?Provide websites}
     if [ -n "$BROWSER" ]; then
         $BROWSER "$website"
     elif uname -a | grep -q Darwin; then
         open -a "/Applications/Safari.app" "$website"
-    elif command -v xdg-open > /dev/null; then
+    elif command -v xdg-open >/dev/null; then
         xdg-open "$website"
-    elif command -v gnome-open > /dev/null; then
+    elif command -v gnome-open >/dev/null; then
         gnome-open "$website"
     else
         http_log debug "Could not detect the web browser to use."
@@ -79,22 +78,25 @@ http_browse(){
 ############################
 # Section 2: Dict & Path
 ############################
-http_dict(){
+http_dict() {
     local O="${O:?Provide Object name}"
     case $# in
-        1) dict_get "${1:?Provide dict key}" ;;
-        2) dict_put "${1:?Provide dict key}" "${2:?Provide dict value}" ;;
-        *) echo "More than 2 variable provided" >&1; return 2;
+    1) dict_get "${1:?Provide dict key}" ;;
+    2) dict_put "${1:?Provide dict key}" "${2:?Provide dict value}" ;;
+    *)
+        echo "More than 2 variable provided" >&1
+        return 2
+        ;;
     esac
 }
 
-http_cd(){
+http_cd() {
     [ -z "$O" ] && return 1
     local URL=${URL:-$(http_dict "url")}
     dict_put "url" "$URL/${1:?Provide url}"
 }
 
-http_path(){   # TODO: how to cd back
+http_path() { # TODO: how to cd back
     local url
     url="$(http_dict url)"
     if [ -z "$url" ]; then
@@ -117,7 +119,7 @@ http_path(){   # TODO: how to cd back
 content-type: application/json
 accept: application/json
 DOCTEST
-http_header(){
+http_header() {
     local O="${O:?Provide Object name}"
     local op
     if [ "$#" -eq 0 ]; then
@@ -127,39 +129,49 @@ http_header(){
         shift
     fi
     case "$op" in
-        dump)   
-            case "$1" in
-                json)  
-                    dict_scope header | dict_pjson ;;
-                curl)
-                    http_header dump | while read -r line; do
-                        printf "-H \"%s\" " "$line"
-                    done ;;
-                *)  dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_pprint ;;
-            esac ;;
-        get)    
-            dict_get "header" "${1:?header key}" ;;
-        put)    
-            dict_put "header" "${1:?header key}" "${2:?value}" ;;
-        mput)   
-            for i in "$@"; do
-                if [[ "$i" = *=* ]]; then
-                    http_header put "${i%=*}" "${i##*=}"
-                else
-                    http_header put "$i"
-                fi
-            done ;;
-        remove) 
-            for i in "$@"; do
-                dict_drop header "$i"
-            done ;;
-        content-type)
-            # TODO: Using another individual mapping
-            _http_header_content_type "$@" ;;
-        referer)    
-            http_header put "Referer" "${1:?Referer}" ;;
-        agent|user-agent)
-            http_header put "User-Agent" "${1:?User agent}"
+    dump)
+        case "$1" in
+        json)
+            dict_scope header | dict_pjson
+            ;;
+        curl)
+            http_header dump | while read -r line; do
+                printf " -H \"%s\" " "$line"
+            done
+            ;;
+        *) dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_pprint ;;
+        esac
+        ;;
+    get)
+        dict_get "header" "${1:?header key}"
+        ;;
+    put)
+        dict_put "header" "${1:?header key}" "${2:?value}"
+        ;;
+    mput)
+        for i in "$@"; do
+            if [[ "$i" = *=* ]]; then
+                http_header put "${i%=*}" "${i##*=}"
+            else
+                http_header put "$i"
+            fi
+        done
+        ;;
+    remove)
+        for i in "$@"; do
+            dict_drop header "$i"
+        done
+        ;;
+    content-type)
+        # TODO: Using another individual mapping
+        _http_header_content_type "$@"
+        ;;
+    referer)
+        http_header put "Referer" "${1:?Referer}"
+        ;;
+    agent | user-agent)
+        http_header put "User-Agent" "${1:?User agent}"
+        ;;
 
     esac
 }
@@ -170,7 +182,6 @@ http_header(){
 # "
 # }
 
-
 # TODO: Introducing file with multiple candidates
 HTTP_HEADER_CONTENT_TYPE_LSIT="
 application/json
@@ -180,7 +191,7 @@ application/yml
 application/json;charset=utf-8
 "
 
-_http_header_content_type(){
+_http_header_content_type() {
     if [ $# -eq 0 ]; then
         if http_header_get "Content-Type"; then
             return 0
@@ -224,7 +235,7 @@ _http_header_content_type(){
   "token": "token123"
 }
 DOCTEST
-http_qs(){
+http_qs() {
     local O="${O:?Provide Object name}"
 
     local op
@@ -234,40 +245,47 @@ http_qs(){
         op="${1}"
         shift
     fi
-    
+
     case "$op" in
-        dump)
-            case "$1" in
-                json)  
-                    dict_scope qs | dict_pjson ;;
-                curl)
-                    local line
-                    printf "%s" " -G "
-                    dict_scope qs | KV_SEP="=" dict_pprint | while read -r line; do
-                        # printf "--data-urlencode \"%s\" " "$line"
-                        printf " %s " "--data-urlencode $line"
-                    done ;;
-                *)  dict_scope qs ;;
-            esac ;;
-        get)
-            dict_get qs "${1:?header key}" ;;
-        put)    
-            dict_put qs "${1:?header key}" "${2:-${!1}}" ;;
-        remove|rm)
-            dict_drop qs "${1:?header key}" ;;
-        mput)
-            # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
-            # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
-            local value
-            local i
-            for i in "$@"; do
-                if [[ "$i" = *=* ]]; then
-                    http_qs put "${i%=*}" "${i##*=}"
-                else
-                    eval value="\"\$${i}\""
-                    [ -n "$value" ] && http_qs put "$i" "$value"
-                fi
-            done;
+    dump)
+        case "$1" in
+        json)
+            dict_scope qs | dict_pjson
+            ;;
+        curl)
+            local line
+            printf "%s" " -G "
+            dict_scope qs | KV_SEP="=" dict_pprint | while read -r line; do
+                # printf "--data-urlencode \"%s\" " "$line"
+                printf " %s " "--data-urlencode $line"
+            done
+            ;;
+        *) dict_scope qs ;;
+        esac
+        ;;
+    get)
+        dict_get qs "${1:?header key}"
+        ;;
+    put)
+        dict_put qs "${1:?header key}" "${2:-${!1}}"
+        ;;
+    remove | rm)
+        dict_drop qs "${1:?header key}"
+        ;;
+    mput)
+        # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
+        # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
+        local value
+        local i
+        for i in "$@"; do
+            if [[ "$i" = *=* ]]; then
+                http_qs put "${i%=*}" "${i##*=}"
+            else
+                eval value="\"\$${i}\""
+                [ -n "$value" ] && http_qs put "$i" "$value"
+            fi
+        done
+        ;;
     esac
 }
 
@@ -282,9 +300,9 @@ http_qs(){
 }
 DOCTEST
 
-http_body(){
+http_body() {
     local O="${O:?Provide Object name}"
-    
+
     local op
     if [ $# -eq 0 ]; then
         op=help
@@ -294,40 +312,45 @@ http_body(){
     fi
 
     case "$op" in
-        dump)
-            case "$1" in
-                json)  
-                    dict_scope body | dict_pjson ;;
-                *)  dict_scope body ;;
-            esac ;;
-        get)
-            dict_get body "${1:?body key}" ;;
-        put)    
-            dict_put body "${1:?body key}" "${2:-${!1}}" ;;
-        remove|rm)
-            dict_drop body "${1:?body key}" ;;
-        mput)
-            # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
-            # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
-            local value
-            local i
-            for i in "$@"; do
-                if [[ "$i" = *=* ]]; then
-                    http_body put "${i%=*}" "${i##*=}"
-                else
-                    eval value="\"\$${i}\""
-                    [ -n "$value" ] && http_body put "$i" "$value"
-                fi
-            done;
+    dump)
+        case "$1" in
+        json)
+            dict_scope body | dict_pjson
+            ;;
+        *) dict_scope body ;;
+        esac
+        ;;
+    get)
+        dict_get body "${1:?body key}"
+        ;;
+    put)
+        dict_put body "${1:?body key}" "${2:-${!1}}"
+        ;;
+    remove | rm)
+        dict_drop body "${1:?body key}"
+        ;;
+    mput)
+        # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
+        # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
+        local value
+        local i
+        for i in "$@"; do
+            if [[ "$i" = *=* ]]; then
+                http_body put "${i%=*}" "${i##*=}"
+            else
+                eval value="\"\$${i}\""
+                [ -n "$value" ] && http_body put "$i" "$value"
+            fi
+        done
+        ;;
     esac
 }
-
 
 ############################
 # Section 5: Request & Response
 ############################
 
-http_resp(){
+http_resp() {
     local O="${O:?Provide Object name}"
 
     local op
@@ -339,45 +362,48 @@ http_resp(){
     fi
 
     case $op in
-        h|header)
-            if [ -z "$1" ]; then
-                cat "$(http_resp header_filepath)"
-            else
-                local filepath
-                filepath="$(http_resp header_filepath)"
-                local filter=${1:?provide filter} A
-                A="$(grep "$filter:" "$filepath")"
-                A="${A##$filter: }"
-                echo -n "${A%"${A##*[![:space:]]}"}"
-            fi ;;
-        header_filepath)
-            echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}" ;;
-        body_filepath)
-            echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}" ;;
-        body) 
-            cat "$(http_resp body_filepath)" ;;
-        *)
-            http_resp body "$@"
+    h | header)
+        if [ -z "$1" ]; then
+            cat "$(http_resp header_filepath)"
+        else
+            local filepath
+            filepath="$(http_resp header_filepath)"
+            local filter=${1:?provide filter} A
+            A="$(grep "$filter:" "$filepath")"
+            A="${A##$filter: }"
+            echo -n "${A%"${A##*[![:space:]]}"}"
+        fi
+        ;;
+    header_filepath)
+        echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}"
+        ;;
+    body_filepath)
+        echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}"
+        ;;
+    body)
+        cat "$(http_resp body_filepath)"
+        ;;
+    *)
+        http_resp body "$@"
+        ;;
     esac
 }
 
 # #1: path; #2 data
-http_request(){
+http_request() {
     local IFS=$' '
     local O="${O:?Please provide O}"
-
-    local X=${X:-get)} 
+    local X=${X:-get}
     local data=${2:-"$D"}
-    local path
-    path="$(http_path "$1")"
 
+    local paths
+    paths="$(http_path "$1")"
     if [ -z "$data" ]; then
         data="$(http_body dump json "")"
     fi
-
     local tmp
     tmp=$(mktemp)
-    echo "$data" > "$tmp"
+    echo "$data" >"$tmp"
     # TODO: Display the data if only if body is text and data is NOT a lot
     # http_log debug "body is: $data"
     # [ -n "$DEBUG" ] && echo "body is: $data" >&2
@@ -387,11 +413,11 @@ http_request(){
     data_filepath="$(http_resp body_filepath)"
 
     if [ "$X" = GET ] || [ "$X" = DELETE ] || [ "$X" = HEAD ]; then
-        http_log debug curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path"
-        eval curl -D "$header_filepath"  -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$paths"
+        eval curl -D "$header_filepath" -X "$X" "$(http qs dump curl)" "$(http header dump curl)" "$paths" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     else
-        http_log debug curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$path"
-        eval curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$path" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
+        http_log debug curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$paths"
+        eval curl -D "$header_filepath" -X "$X" "$(http header dump curl)" -d "@$tmp" "$paths" 1>"$data_filepath" 2>/dev/null #2>(http_log debug)
     fi
     rm "$tmp"
 
@@ -400,7 +426,7 @@ http_request(){
     local a b c
     # shellcheck disable=SC2034
     read -r a b c <<<"$(cat "$header_filepath")"
-    
+
     if [ -n "$b" ] && [ "$b" -ge 200 ] && [ "$b" -le 299 ]; then
         cat "$data_filepath"
         return 0
@@ -410,8 +436,9 @@ http_request(){
     return 1
 }
 
-_http_request_json_body() (  # Notice: Using subshell
-    url=$1;  shift
+_http_request_json_body() (# Notice: Using subshell
+    url=$1
+    shift
     http_body mput "$@"
     http_request "$url" "$(http_body dump json "")"
 )
@@ -421,9 +448,10 @@ _http_request_json_body() (  # Notice: Using subshell
 ############################
 
 # crud
-http_get() (    # Notice: Using subshell
+http_get() (# Notice: Using subshell
     local O="${O:?Provide Object name}"
-    url=$1;  shift
+    url=$1
+    shift
     http_qs mput "$@"
     X=GET http_request "$url"
 )
@@ -431,57 +459,67 @@ http_get() (    # Notice: Using subshell
 http_post() {
     local O="${O:?Provide Object name}"
     case "$1" in
-        json)   X=POST _http_request_json_body "$@" ;;
-        form)   ;;
-        text)   ;;
-        bin)    ;;
-        *)      X=POST http_request "$@" ;;
+    json)
+        shift
+        http_header put Content-Type application/json
+        X=POST _http_request_json_body "$@"
+        ;;
+    form) shift ;;
+    text) shift ;;
+    bin) shift ;;
+    *) X=POST http_request "$@" ;;
     esac
 }
 
-http_put(){
+http_put() {
     local O="${O:?Provide Object name}"
     case "$1" in
-        json)   X=PUT _http_request_json_body "$@" ;;
-        form)   ;;
-        text)   ;;
-        bin)    ;;
-        *)      X=PUT http_request "$@" ;;
+    json) X=PUT _http_request_json_body "$@" ;;
+    form) ;;
+    text) ;;
+    bin) ;;
+    *) X=PUT http_request "$@" ;;
     esac
 }
 
-http_delete(){ X=DELETE http_request "$@"; }
-http_head(){ X=HEAD http_request "$@"; }
+http_delete() { X=DELETE http_request "$@"; }
+http_head() { X=HEAD http_request "$@"; }
 
 ############################
 # Section 7: GraphQL -- graphql
 ############################s
 
-http_graphql(){
+http_graphql() {
     local O="${O:?Provide Object name}"
-    
+
     local op
     case "$op" in
-        q|query)
-            shift; local url=$1;  shift
-            http_graphql execute "$1" "query { $2 }"
-            ;;
-        qj|query-json)
-            shift; local url=$1;  shift
-            http_graphql execute-json "$1" "{ \"query\": \"{ $2 }\""
-            ;;
-        e|execute)
-            local url=$1;  shift
-            http content-type application/graphql
-            http_post "$1"
-            ;;
-        ej|execute-json)
-            local url=$1;  shift
-            http content-type application/json
-            http_post "$1"
-            ;;
-        *)
-            http_graphql execute "$@"
-            ;;
+    q|query)
+        shift
+        local url=$1
+        shift
+        http_graphql execute "$1" "query { $2 }"
+        ;;
+    qj|query-json)
+        shift
+        local url=$1
+        shift
+        http_graphql execute-json "$1" "{ \"query\": \"{ $2 }\""
+        ;;
+    e|execute)
+        local url=$1
+        shift
+        http content-type application/graphql
+        http_post "$1"
+        ;;
+    ej|execute-json)
+        local url=$1
+        shift
+        http content-type application/json
+        http_post "$1"
+        ;;
+    *)
+        http_graphql execute "$@"
+        ;;
     esac
 }
