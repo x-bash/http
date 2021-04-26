@@ -15,24 +15,23 @@ http() {
         shift
     fi
     case "$op" in
-    make) http_make "$@" ;;
-    browse) http_browse "$@" ;;
-    dict | property) http_dict "$@" ;;
-    cd) http_cd "$@" ;;
-    path) http_path "$@" ;;
-    qs) http_qs "$@" ;;
-    header) http_header "$@" ;;
+        make)               http_make       "$@" ;;
+        browse)             http_browse     "$@" ;;
+        dict|property)      http_dict       "$@" ;;
+        cd)                 http_cd         "$@" ;;
+        path)               http_path       "$@" ;;
+        qs)                 http_qs         "$@" ;;
+        header)             http_header     "$@" ;;
 
-    req | request) http_request "$@" ;;
-    head) http_head "$@" ;;
-    get) http_get "$@" ;;
-    post) http_post "$@" ;;
-    put) http_put "$@" ;;
-    delete) http_delete "$@" ;;
+        req|request)        http_request    "$@" ;;
+        head)               http_head       "$@" ;;
+        get)                http_get        "$@" ;;
+        post)               http_post       "$@" ;;
+        put)                http_put        "$@" ;;
+        delete)             http_delete     "$@" ;;
 
-    graphql | gq) http_graphql "$@" ;;
-
-    resp | response) http_resp "$@" ;;
+        graphql|gq)         http_graphql    "$@" ;;
+        resp|response)      http_resp       "$@" ;;
     esac
 }
 
@@ -129,50 +128,49 @@ http_header() {
         shift
     fi
     case "$op" in
-    dump)
-        case "$1" in
-        json)
-            dict_scope header | dict_pjson
+        dump)
+            case "$1" in
+                json)
+                    dict_scope header | dict_pjson
+                    ;;
+                curl)
+                    http_header dump | while read -r line; do
+                        printf " -H \"%s\" " "$line"
+                    done
+                    ;;
+                *) dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_pprint ;;
+            esac
             ;;
-        curl)
-            http_header dump | while read -r line; do
-                printf " -H \"%s\" " "$line"
+        get)
+            dict_get "header" "${1:?header key}"
+            ;;
+        put)
+            dict_put "header" "${1:?header key}" "${2:?value}"
+            ;;
+        mput)
+            for i in "$@"; do
+                if [[ "$i" = *=* ]]; then
+                    http_header put "${i%=*}" "${i##*=}"
+                else
+                    http_header put "$i"
+                fi
             done
             ;;
-        *) dict_scope header | ITEM_SEP="\n" KV_SEP=": " dict_pprint ;;
-        esac
-        ;;
-    get)
-        dict_get "header" "${1:?header key}"
-        ;;
-    put)
-        dict_put "header" "${1:?header key}" "${2:?value}"
-        ;;
-    mput)
-        for i in "$@"; do
-            if [[ "$i" = *=* ]]; then
-                http_header put "${i%=*}" "${i##*=}"
-            else
-                http_header put "$i"
-            fi
-        done
-        ;;
-    remove)
-        for i in "$@"; do
-            dict_drop header "$i"
-        done
-        ;;
-    content-type)
-        # TODO: Using another individual mapping
-        _http_header_content_type "$@"
-        ;;
-    referer)
-        http_header put "Referer" "${1:?Referer}"
-        ;;
-    agent | user-agent)
-        http_header put "User-Agent" "${1:?User agent}"
-        ;;
-
+        remove)
+            for i in "$@"; do
+                dict_drop header "$i"
+            done
+            ;;
+        content-type)
+            # TODO: Using another individual mapping
+            _http_header_content_type "$@"
+            ;;
+        referer)
+            http_header put "Referer" "${1:?Referer}"
+            ;;
+        agent|user-agent)
+            http_header put "User-Agent" "${1:?User agent}"
+            ;;
     esac
 }
 
@@ -247,45 +245,45 @@ http_qs() {
     fi
 
     case "$op" in
-    dump)
-        case "$1" in
-        json)
-            dict_scope qs | dict_pjson
+        dump)
+            case "$1" in
+                json)
+                    dict_scope qs | dict_pjson
+                    ;;
+                curl)
+                    local line
+                    printf "%s" " -G "
+                    dict_scope qs | KV_SEP="=" dict_pprint | while read -r line; do
+                        # printf "--data-urlencode \"%s\" " "$line"
+                        printf " %s " "--data-urlencode $line"
+                    done
+                    ;;
+                *) dict_scope qs ;;
+            esac
             ;;
-        curl)
-            local line
-            printf "%s" " -G "
-            dict_scope qs | KV_SEP="=" dict_pprint | while read -r line; do
-                # printf "--data-urlencode \"%s\" " "$line"
-                printf " %s " "--data-urlencode $line"
+        get)
+            dict_get qs "${1:?header key}"
+            ;;
+        put)
+            dict_put qs "${1:?header key}" "${2:-${!1}}"
+            ;;
+        remove | rm)
+            dict_drop qs "${1:?header key}"
+            ;;
+        mput)
+            # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
+            # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
+            local value
+            local i
+            for i in "$@"; do
+                if [[ "$i" = *=* ]]; then
+                    http_qs put "${i%=*}" "${i##*=}"
+                else
+                    eval value="\"\$${i}\""
+                    [ -n "$value" ] && http_qs put "$i" "$value"
+                fi
             done
             ;;
-        *) dict_scope qs ;;
-        esac
-        ;;
-    get)
-        dict_get qs "${1:?header key}"
-        ;;
-    put)
-        dict_put qs "${1:?header key}" "${2:-${!1}}"
-        ;;
-    remove | rm)
-        dict_drop qs "${1:?header key}"
-        ;;
-    mput)
-        # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
-        # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
-        local value
-        local i
-        for i in "$@"; do
-            if [[ "$i" = *=* ]]; then
-                http_qs put "${i%=*}" "${i##*=}"
-            else
-                eval value="\"\$${i}\""
-                [ -n "$value" ] && http_qs put "$i" "$value"
-            fi
-        done
-        ;;
     esac
 }
 
@@ -312,37 +310,37 @@ http_body() {
     fi
 
     case "$op" in
-    dump)
-        case "$1" in
-        json)
-            dict_scope body | dict_pjson
+        dump)
+            case "$1" in
+                json)
+                    dict_scope body | dict_pjson
+                    ;;
+                *) dict_scope body ;;
+            esac
             ;;
-        *) dict_scope body ;;
-        esac
-        ;;
-    get)
-        dict_get body "${1:?body key}"
-        ;;
-    put)
-        dict_put body "${1:?body key}" "${2:-${!1}}"
-        ;;
-    remove | rm)
-        dict_drop body "${1:?body key}"
-        ;;
-    mput)
-        # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
-        # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
-        local value
-        local i
-        for i in "$@"; do
-            if [[ "$i" = *=* ]]; then
-                http_body put "${i%=*}" "${i##*=}"
-            else
-                eval value="\"\$${i}\""
-                [ -n "$value" ] && http_body put "$i" "$value"
-            fi
-        done
-        ;;
+        get)
+            dict_get body "${1:?body key}"
+            ;;
+        put)
+            dict_put body "${1:?body key}" "${2:-${!1}}"
+            ;;
+        remove|rm)
+            dict_drop body "${1:?body key}"
+            ;;
+        mput)
+            # Notice 1: `http_qs_put abc=``  will put the entry { abc: "" }
+            # Notice 2: `abc=; http_qs_put abc` will NOT put any entry
+            local value
+            local i
+            for i in "$@"; do
+                if [[ "$i" = *=* ]]; then
+                    http_body put "${i%=*}" "${i##*=}"
+                else
+                    eval value="\"\$${i}\""
+                    [ -n "$value" ] && http_body put "$i" "$value"
+                fi
+            done
+            ;;
     esac
 }
 
@@ -362,30 +360,30 @@ http_resp() {
     fi
 
     case $op in
-    h | header)
-        if [ -z "$1" ]; then
-            cat "$(http_resp header_filepath)"
-        else
-            local filepath
-            filepath="$(http_resp header_filepath)"
-            local filter=${1:?provide filter} A
-            A="$(grep "$filter:" "$filepath")"
-            A="${A##$filter: }"
-            echo -n "${A%"${A##*[![:space:]]}"}"
-        fi
-        ;;
-    header_filepath)
-        echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}"
-        ;;
-    body_filepath)
-        echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}"
-        ;;
-    body)
-        cat "$(http_resp body_filepath)"
-        ;;
-    *)
-        http_resp body "$@"
-        ;;
+        h|header)
+            if [ -z "$1" ]; then
+                cat "$(http_resp header_filepath)"
+            else
+                local filepath
+                filepath="$(http_resp header_filepath)"
+                local filter=${1:?provide filter} A
+                A="$(grep "$filter:" "$filepath")"
+                A="${A##$filter: }"
+                echo -n "${A%"${A##*[![:space:]]}"}"
+            fi
+            ;;
+        header_filepath)
+            echo "${TMPDIR}x-cmd-x-bash-std-http-header.${O:?Please provide O}"
+            ;;
+        body_filepath)
+            echo "${TMPDIR}x-cmd-x-bash-std-http-body.${O:?Please provide O}"
+            ;;
+        body)
+            cat "$(http_resp body_filepath)"
+            ;;
+        *)
+            http_resp body "$@"
+            ;;
     esac
 }
 
@@ -458,27 +456,26 @@ http_get() (# Notice: Using subshell
 
 http_post() {
     local O="${O:?Provide Object name}"
-    case "$1" in
-    json)
-        shift
-        http_header put Content-Type application/json
-        X=POST _http_request_json_body "$@"
-        ;;
-    form) shift ;;
-    text) shift ;;
-    bin) shift ;;
-    *) X=POST http_request "$@" ;;
+    local op="$1"; shift;
+    case "$op" in
+        json)   http_header put Content-Type application/json
+                X=POST _http_request_json_body "$@"
+                ;;
+        form)   : ;;
+        text)   : ;;
+        bin)    : ;;
+        *)      X=POST http_request "$op" "$@" ;;
     esac
 }
 
 http_put() {
     local O="${O:?Provide Object name}"
     case "$1" in
-    json) X=PUT _http_request_json_body "$@" ;;
-    form) ;;
-    text) ;;
-    bin) ;;
-    *) X=PUT http_request "$@" ;;
+        json)   X=PUT _http_request_json_body "$@" ;;
+        form)   ;;
+        text)   ;;
+        bin)    ;;
+        *)      X=PUT http_request "$@" ;;
     esac
 }
 
@@ -492,34 +489,28 @@ http_head() { X=HEAD http_request "$@"; }
 http_graphql() {
     local O="${O:?Provide Object name}"
 
-    local op
+    local op="$1"; shift
     case "$op" in
-    q|query)
-        shift
-        local url=$1
-        shift
-        http_graphql execute "$1" "query { $2 }"
-        ;;
-    qj|query-json)
-        shift
-        local url=$1
-        shift
-        http_graphql execute-json "$1" "{ \"query\": \"{ $2 }\""
-        ;;
-    e|execute)
-        local url=$1
-        shift
-        http content-type application/graphql
-        http_post "$1"
-        ;;
-    ej|execute-json)
-        local url=$1
-        shift
-        http content-type application/json
-        http_post "$1"
-        ;;
-    *)
-        http_graphql execute "$@"
-        ;;
+        q|query)
+            local url=$1; shift
+            http_graphql execute "$1" "query { $2 }"
+            ;;
+        qj|query-json)
+            local url=$1; shift
+            http_graphql execute-json "$1" "{ \"query\": \"{ $2 }\""
+            ;;
+        e|execute)
+            local url=$1; shift
+            http content-type application/graphql
+            http_post "$1"
+            ;;
+        ej|execute-json)
+            local url=$1; shift
+            http content-type application/json
+            http_post "$1"
+            ;;
+        *)
+            http_graphql execute "$@"
+            ;;
     esac
 }
