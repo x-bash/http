@@ -15,6 +15,8 @@ http() {
         shift
     fi
     case "$op" in
+        _param_advise_json_items) _http_param_advise_json_items ;;
+        new)                http_new        "$@" ;;
         make)               http_make       "$@" ;;
         browse)             http_browse     "$@" ;;
         dict|property)      http_dict       "$@" ;;
@@ -48,6 +50,13 @@ http() {
 # Section 1: Instantiation & Utilities
 ############################
 # http_new(){  oo.create_new_function http "$@";  }
+
+http_new(){
+    local name=${1:-?Provide Name}
+    http_make "$@"
+    # shellcheck disable=SC2139
+    alias "$name=O=$name http"
+}
 
 http_make() {
     dict_make "${1:?Provide name}"
@@ -514,3 +523,35 @@ http_graphql() {
             ;;
     esac
 }
+
+_http_param_advise_json_items(){
+    cat <<A
+{
+    "new": null,
+    "make": null,
+    "browse": null,
+    "dict|property": null,
+    "cd": null,
+    "path": null,
+    "qs": null,
+    "header": null,
+
+    "req|request": null,
+    "head": null,
+    "get": null,
+    "post": null,
+    "put": null,
+    "delete": null,
+    "graphql|gq": null,
+    "resp|response": null,
+
+    "help": null
+}
+A
+    return 126
+}
+
+if [ -n "${BASH_VERSION}${ZSH_VERSION}" ] && [ "${-#*i}" != "$-" ]; then
+    xrc advise/v0
+    advise http
+fi
