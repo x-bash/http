@@ -276,7 +276,7 @@ http_qs() {
         put)
             # TODO ${!1}?
             local header_key="${1:?header key}"
-            if [ -z "$2" ]; then
+            if [ $# -eq 1 ]; then
                 eval dict_put qs "\$header_key" "\$${header_key}"
             else
                 dict_put qs "$header_key" "$2"
@@ -339,7 +339,7 @@ http_body() {
             ;;
         put)
             local body_key="${1:?body key}"
-            if [ -z "$2" ]; then
+            if [ $# -eq 1 ]; then
                 eval dict_put qs "\$body_key" "\$${body_key}"
             else
                 dict_put qs "$body_key" "$2"
