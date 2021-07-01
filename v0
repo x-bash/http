@@ -158,7 +158,8 @@ http_header() {
             ;;
         mput)
             for i in "$@"; do
-                if [[ "$i" = *=* ]]; then
+                # if [[ "$i" = *=* ]]; then
+                if [ "$i" != "${i%%=*}" ]; then
                     http_header put "${i%=*}" "${i##*=}"
                 else
                     http_header put "$i"
@@ -274,7 +275,6 @@ http_qs() {
             dict_get qs "${1:?header key}"
             ;;
         put)
-            # TODO ${!1}?
             local header_key="${1:?header key}"
             if [ $# -eq 1 ]; then
                 eval dict_put qs "\$header_key" "\$${header_key}"
@@ -291,9 +291,9 @@ http_qs() {
             local value
             local i
             for i in "$@"; do
-                # TODO dash  [[]] error and [ "$i" = *=* ] error
-                if [[ "$i" = *=* ]]; then
-                    http_qs put "${i%=*}" "${i##*=}"
+                # if [[ "$i" = *=* ]]; then
+                if [ "$i" != "${i%%=*}" ]; then
+                    http_qs put "${i%%=*}" "${i#*=}"
                 else
                     eval value="\"\$${i}\""
                     [ -n "$value" ] && http_qs put "$i" "$value"
@@ -354,7 +354,8 @@ http_body() {
             local value
             local i
             for i in "$@"; do
-                if [[ "$i" = *=* ]]; then
+                # if [[ "$i" = *=* ]]; then
+                if [ "$i" != "${i%%=*}" ]; then
                     http_body put "${i%=*}" "${i##*=}"
                 else
                     eval value="\"\$${i}\""
@@ -390,7 +391,7 @@ http_resp() {
                 local filter=${1:?provide filter} A
                 A="$(grep "$filter:" "$filepath")"
                 A="${A##$filter: }"
-                echo -n "${A%"${A##*[![:space:]]}"}"
+                printf "%s" "${A%"${A##*[![:space:]]}"}"
             fi
             ;;
         header_filepath)
@@ -410,7 +411,7 @@ http_resp() {
 
 # #1: path; #2 data
 http_request() {
-    local IFS=$' '
+    local IFS=" "
     local O="${O:?Please provide O}"
     local X=${X:-get}
     local data=${2:-"$D"}
