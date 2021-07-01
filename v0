@@ -1,8 +1,8 @@
-# shellcheck shell=bash
+# shellcheck shell=sh
+# shellcheck disable=SC2039
 
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
-
 # @src std/dict  # @src std/oo # std/dict -> std/list -> std/oo
 xrc dict/v0
 
@@ -274,7 +274,8 @@ http_qs() {
             dict_get qs "${1:?header key}"
             ;;
         put)
-            dict_put qs "${1:?header key}" "${2:-${!1}}"
+            # TODO ${!1}?
+            dict_put qs "${1:?header key}" "${2:-${1}}"
             ;;
         remove | rm)
             dict_drop qs "${1:?header key}"
@@ -285,6 +286,7 @@ http_qs() {
             local value
             local i
             for i in "$@"; do
+                # TODO dash  [[]] error and [ "$i" = *=* ] error
                 if [[ "$i" = *=* ]]; then
                     http_qs put "${i%=*}" "${i##*=}"
                 else
@@ -331,7 +333,7 @@ http_body() {
             dict_get body "${1:?body key}"
             ;;
         put)
-            dict_put body "${1:?body key}" "${2:-${!1}}"
+            dict_put body "${1:?body key}" "${2:-${1}}"
             ;;
         remove|rm)
             dict_drop body "${1:?body key}"
@@ -432,8 +434,9 @@ http_request() {
 
     local a b c
     # shellcheck disable=SC2034
-    read -r a b c <<<"$(cat "$header_filepath")"
-
+    read -r a b c <A
+    "$(cat "$header_filepath")"
+A
     if [ -n "$b" ] && [ "$b" -ge 200 ] && [ "$b" -le 299 ]; then
         cat "$data_filepath"
         return 0

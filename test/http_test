@@ -1,0 +1,131 @@
+# shellcheck shell=sh
+# shellcheck disable=SC2039
+
+xrc http assert
+test_http() {
+    echo "开始测试"
+    test_http_browse() {
+        http_browse https://gitee.com
+        echo "browse 测试完成"
+    }
+
+    test_http_dict() {
+        O=baidu http_make baidu www.baidu.com
+        assert "$(O=baidu http_dict url)" = www.baidu.com
+        echo "http_make 测试完成"
+
+        O=baidu http_dict url https://gitee.com
+        assert "$(O=baidu http_dict url)" = https://gitee.com
+
+        O=baidu http_dict url www.baidu.com
+        assert "$(O=baidu http_dict url)" = www.baidu.com
+        echo "http_dict 测试完成"
+
+        O=baidu http_cd index.html
+        assert "$(O=baidu http_dict url)" = www.baidu.com/index.html
+        assert "$(O=git http_path https://gitee.com/)" = https://gitee.com/
+        assert "$(O=baidu http_path https://gitee.com)" = www.baidu.com/index.htmlhttps://gitee.com
+        echo "http_path 测试完成"
+    }
+
+    test_http_header() {
+        O=baidu http_header put Content-Type application/json
+        assert "$(O=baidu http_header get Content-Type)" = 'application/json'
+        echo "http_header put 测试完成"
+
+        O=baidu http_header mput Content-Type=application/text content-encoding=gzip
+        assert "$(O=baidu http_header get Content-Type)" = 'application/text'
+        echo "http_header mput 测试完成"
+
+        O=baidu http_header content-type application/json
+        assert "$(O=baidu http_header get Content-Type)" = '
+application/json
+application/text
+application/xml
+application/yml
+application/json;charset=utf-8'
+        echo "http_header content-type 测试完成"
+
+        O=baidu http_header put Content-Type application/json
+        O=baidu http_header remove Referer
+        assert "$(O=baidu http_header dump)" = 'content-encoding: gzip
+Content-Type: application/json'
+        echo "http_header remove 测试完成"
+
+        O=baidu http_header referer "1234"
+        assert "$(O=baidu http_header dump)" = 'content-encoding: gzip
+Content-Type: application/json
+Referer: 1234'
+        echo "http_header referer 测试完成"
+
+        O=baidu http_header agent "tzw"
+        assert "$(O=baidu http_header dump)" = 'content-encoding: gzip
+Content-Type: application/json
+Referer: 1234
+User-Agent: tzw'
+        O=baidu http_header remove User-Agent
+        echo "http_header agent 测试完成"
+    
+    assert "$(O=baidu http_header dump json)" =  '{
+  "content-encoding": "gzip",
+  "Content-Type": "application/json",
+  "Referer": "1234"
+}'
+        echo "http_header dump json 测试完成"
+    }
+
+    test_http_qs() {
+        O=qsTest http_qs put key queryStringTest
+        assert "$(O=qsTest http_qs get key)" = 'queryStringTest'
+        echo "http_qs put 测试完成"
+
+        O=qsTest http_qs mput measurement=1111
+        assert "$(O=qsTest http_qs dump json)" = '{
+  "key": "queryStringTest",
+  "measurement": "1111"
+}'
+        echo "http_qs mput 测试完成"
+
+        O=qsTest http_qs remove measurement
+        assert "$(O=qsTest http_qs dump json)" = '{
+  "key": "queryStringTest"
+}'
+        echo "http_qs remove 测试完成"
+    }
+
+        test_http_body() {
+        O=body http_body put name 'zs'
+        assert "$(O=body http_body get name)" = 'zs'
+        echo "http_body put 测试完成"
+
+        O=body http_body mput name='lisi'
+        assert "$(O=body http_body get name)" = 'lisi'
+        echo "http_body mput 测试完成"
+
+        assert "$(O=body http_body dump json)" = '{
+  "name": "lisi"
+}'
+        echo "http_body dump json 测试完成"
+
+        O=body http_body remove name
+        assert "$(O=body http_body dump json)" = '{
+}'
+        echo "http_body remove 测试完成"
+    }
+
+        test_http_request(){
+        assert "$(O=request http_get "https://httpbin.org/get")" \=str
+        echo "http_get 测试完成"
+        assert "$(O=request http_post json "http://httpbin.org/post" name=zs)" \=str
+        echo "http_post 测试完成"
+        }
+    test_http_browse
+    test_http_dict
+    test_http_header
+    test_http_qs
+    test_http_body
+    test_http_request
+    echo "测试完成"
+}
+
+test_http
