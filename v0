@@ -1,5 +1,5 @@
 # shellcheck shell=sh
-# shellcheck disable=SC2039
+# shellcheck disable=SC2039,SC3043
 
 # author:       Li Junhao           edwin.jh.lee@gmail.com    edwinjhlee.github.io
 # maintainer:   Li Junhao
@@ -275,7 +275,12 @@ http_qs() {
             ;;
         put)
             # TODO ${!1}?
-            dict_put qs "${1:?header key}" "${2:-${1}}"
+            local header_key="${1:?header key}"
+            if [ -z "$2" ]; then
+                eval dict_put qs "\$header_key" "\$${header_key}"
+            else
+                dict_put qs "$header_key" "$2"
+            fi
             ;;
         remove | rm)
             dict_drop qs "${1:?header key}"
@@ -333,7 +338,12 @@ http_body() {
             dict_get body "${1:?body key}"
             ;;
         put)
-            dict_put body "${1:?body key}" "${2:-${1}}"
+            local body_key="${1:?body key}"
+            if [ -z "$2" ]; then
+                eval dict_put qs "\$body_key" "\$${body_key}"
+            else
+                dict_put qs "$body_key" "$2"
+            fi
             ;;
         remove|rm)
             dict_drop body "${1:?body key}"
