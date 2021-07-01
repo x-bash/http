@@ -15,7 +15,7 @@ http() {
         shift
     fi
     case "$op" in
-        _param_advise_json_items) _http_param_advise_json_items ;;
+        _x_cmd_advise_json) _http_x_cmd_advise_json ;;
         new)                http_new        "$@" ;;
         make)               http_make       "$@" ;;
         browse)             http_browse     "$@" ;;
@@ -524,7 +524,7 @@ http_graphql() {
     esac
 }
 
-_http_param_advise_json_items(){
+_http_x_cmd_advise_json(){
     cat <<A
 {
     "new": null,
